@@ -157,7 +157,7 @@ def cuda_stack(name, with_tensorrt=False, minimal=False, requires=None):
     build_args['WITH_NCCL'] = '0' if minimal else '1'
     build_args['WITH_CUDSS'] = '0' if minimal else '1'
     build_args['WITH_CUSPARSELT'] = '0' if minimal else '1'
-    build_args['WITH_CUTENSOR'] = '0' if minimal else '1'
+    build_args['WITH_CUTENSOR'] = '0' if minimal else ('1' if IS_SBSA else '0')
     build_args['WITH_GDRCOPY'] = '0' if minimal else '1'
     build_args['WITH_NVPL'] = '0' if minimal else ('1' if IS_SBSA else '0')
     build_args['WITH_NVSHMEM'] = '0' if minimal else '1'
