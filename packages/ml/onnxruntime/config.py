@@ -2,7 +2,7 @@ from jetson_containers import CUDA_VERSION
 from packaging.version import Version
 
 
-def onnxruntime(version, branch=None, requires=None, default=False):
+def onnxruntime(version, branch=None, requires=None, python=None, default=False):
     ort = package.copy()
 
     ort['name'] = f'onnxruntime:{version}'
@@ -28,6 +28,9 @@ def onnxruntime(version, branch=None, requires=None, default=False):
     builder = ort.copy()
     builder['name'] = builder['name'] + '-builder'
     builder['build_args'] = {**builder['build_args'], 'FORCE_BUILD': 'on'}
+    if python and 'python' in ort['depends']:
+        ort['depends'].remove('python')
+        ort['depends'].append(f'python:{python}')
 
     if default:
         ort['alias'] = 'onnxruntime'
@@ -37,9 +40,7 @@ def onnxruntime(version, branch=None, requires=None, default=False):
 
 
 package = [
-    onnxruntime('1.25.0', requires=['>=36', '>=cu126'], branch='rel-1.25.0', default=(CUDA_VERSION >= Version('12.6'))),
-    onnxruntime('1.24.3', requires=['>=36', '>=cu126'], branch='rel-1.24.3', default=False),
-    onnxruntime('1.24.1', requires=['>=36', '>=cu126'], branch='rel-1.24.1', default=False),
+    onnxruntime('1.24.4', requires=['>=36', '>=cu126'], branch='rel-1.24.4', python='3.12', default=(CUDA_VERSION >= Version('12.6'))),
     onnxruntime('1.23.2', requires=['>=36', '>=cu126'], branch='rel-1.23.2', default=False),
     onnxruntime('1.22', requires=['>=36', '>=cu126'], branch='rel-1.22.0', default=False),
     onnxruntime('1.21', requires=['>=36', '>=cu124'], default=False),

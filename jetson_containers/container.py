@@ -458,7 +458,6 @@ def test_container(name, package, simulate=False, build_idx=None):
 
         cmd = f"{sudo_prefix()}docker run -t --rm --network=host --privileged --shm-size=8g "
 
-        cmd += f"--gpus=all" + _NEWLINE_
         cmd += f"  --env NVIDIA_DRIVER_CAPABILITIES=all" + _NEWLINE_
 
         cmd += f"  --volume {package['path']}:/test" + _NEWLINE_
