@@ -3,6 +3,36 @@ set -ex
 
 echo "Building onnxruntime ${ONNXRUNTIME_VERSION} (branch=${ONNXRUNTIME_BRANCH}, flags=${ONNXRUNTIME_FLAGS})"
 
+UBUNTU_VERSION=$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)
+
+if [[ "$UBUNTU_VERSION" == "22.04" ]]; then
+  echo "🟢 Ubuntu 22.04 detected — installing GCC 13"
+
+  apt-get update
+  apt-get install -y --no-install-recommends \
+    software-properties-common \
+    curl \
+    wget \
+    ca-certificates
+
+  add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  apt-get update
+  apt install -y g++-13 libstdc++-13-dev libstdc++6
+
+  STDCPP_SO=$(find /usr/lib/aarch64-linux-gnu -name 'libstdc++.so.6.0.*' | sort -V | tail -n1)
+  ln -sf "$STDCPP_SO" /usr/lib/aarch64-linux-gnu/libstdc++.so.6
+  export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
+  strings "$STDCPP_SO" | grep GLIBCXX_3.4.32
+
+  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
+  update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13
+  update-alternatives --set gcc /usr/bin/gcc-13
+  update-alternatives --set g++ /usr/bin/g++-13
+
+else
+  echo "🔶 Ubuntu version is $UBUNTU_VERSION — skipping GCC upgrade"
+fi
+
 # Detect TensorRT installation path
 # Priority: Tegra location, then standard location
 TENSORRT_HOME=""
@@ -49,7 +79,7 @@ detect_cuda_max_jobs() {
     local safe_jobs=$(( (total_ram_gb - system_reserve) / cicc_mem_per_job ))
 
     # Clamp between reasonable bounds
-    if [ $safe_jobs -lt 2 ]; then safe_jobs=2; fi
+    if [ $safe_jobs -lt 4 ]; then safe_jobs=4; fi
     if [ $safe_jobs -gt 12 ]; then safe_jobs=12; fi  # Cap at 12 even for large systems
 
     echo $safe_jobs
@@ -125,7 +155,7 @@ else:
     fi
 done
 
-./build.sh --config Release --update --parallel --build --build_wheel --build_shared_lib \
+VERBOSE=1 ./build.sh --config Release --update --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
         --skip_tests --skip_submodule_sync ${ONNXRUNTIME_FLAGS} \
         --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -I/usr/local/cuda/include" \
         --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
