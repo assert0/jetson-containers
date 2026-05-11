@@ -40,7 +40,7 @@ def onnxruntime(version, branch=None, requires=None, python=None, default=False)
 
 
 package = [
-    onnxruntime('1.25.1', requires=['>=36', '>=cu126'], branch='rel-1.25.1', python='3.12', default=(CUDA_VERSION >= Version('12.6'))),
+    onnxruntime('1.26.0', requires=['>=36', '>=cu126'], branch='rel-1.26.0', python='3.12', default=(CUDA_VERSION >= Version('12.6'))),
     onnxruntime('1.24.4', requires=['>=36', '>=cu126'], branch='rel-1.24.4', python='3.12', default=False),
     onnxruntime('1.23.2', requires=['>=36', '>=cu126'], branch='rel-1.23.2', default=False),
     onnxruntime('1.22', requires=['>=36', '>=cu126'], branch='rel-1.22.0', default=False),

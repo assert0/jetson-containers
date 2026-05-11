@@ -17,7 +17,7 @@ if [[ "$UBUNTU_VERSION" == "22.04" ]]; then
 
   add-apt-repository ppa:ubuntu-toolchain-r/test -y
   apt-get update
-  apt install -y g++-13 libstdc++-13-dev libstdc++6
+  apt install -y gcc-13 g++-13 libstdc++-13-dev libstdc++6
 
   STDCPP_SO=$(find /usr/lib/aarch64-linux-gnu -name 'libstdc++.so.6.0.*' | sort -V | tail -n1)
   ln -sf "$STDCPP_SO" /usr/lib/aarch64-linux-gnu/libstdc++.so.6
@@ -28,7 +28,7 @@ if [[ "$UBUNTU_VERSION" == "22.04" ]]; then
   update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13
   update-alternatives --set gcc /usr/bin/gcc-13
   update-alternatives --set g++ /usr/bin/g++-13
-
+  gcc --version
 else
   echo "🔶 Ubuntu version is $UBUNTU_VERSION — skipping GCC upgrade"
 fi
@@ -155,9 +155,54 @@ else:
     fi
 done
 
-VERBOSE=1 ./build.sh --config Release --update --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
-        --skip_tests --skip_submodule_sync ${ONNXRUNTIME_FLAGS} \
-        --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -I/usr/local/cuda/include" \
+# Abseil fix for the absl::lts_20250814::container_internal::IfRRef compile error
+sed -i 's|abseil_cpp;https://github.com/abseil/abseil-cpp/archive/refs/tags/20250814.0.zip;a9eb1d648cbca4d4d788737e971a6a7a63726b07|abseil_cpp;https://github.com/abseil/abseil-cpp/archive/refs/tags/20250814.2.zip;e499d417732d4d76128bb835a719742d58a0555a|' \
+  /opt/onnxruntime/cmake/deps.txt
+
+VERBOSE=1 ./build.sh --config Release --update \
+        --skip_tests --skip_submodule_sync --compile_no_warning_as_error ${ONNXRUNTIME_FLAGS} \
+        --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-psabi -I/usr/local/cuda/include" \
+        --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
+        --cmake_extra_defines CMAKE_INSTALL_PREFIX=${install_dir} \
+        --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF \
+        --cuda_home /usr/local/cuda --cudnn_home ${CUDNN_HOME} \
+        --use_tensorrt --tensorrt_home ${TENSORRT_HOME}
+
+# Abseil fix for the absl::lts_20250814::container_internal::IfRRef compile error
+python3 << 'EOF'
+path = '/opt/onnxruntime/build/Linux/Release/_deps/abseil_cpp-src/absl/container/internal/raw_hash_map.h'
+
+with open(path) as f:
+    content = f.read()
+
+old = (
+    '                                          IfRRef<int KQual>::AddPtr<K>,        \\\n'
+    '                                          IfRRef<int VQual>::AddPtr<V>>>()),   \\'
+)
+new = (
+    '                                          std::conditional_t<std::is_rvalue_reference<int KQual>::value, K*, K>, \\\n'
+    '                                          std::conditional_t<std::is_rvalue_reference<int VQual>::value, V*, V>>>()),   \\'
+)
+
+if old not in content:
+    print("ERROR: Pattern not found")
+    exit(1)
+
+content = content.replace(old, new)
+with open(path, 'w') as f:
+    f.write(content)
+
+print("Patched successfully")
+print("\nLines 108-113 now read:")
+with open(path) as f:
+    lines = f.readlines()
+for i, line in enumerate(lines[107:113], 108):
+    print(f"{i}: {line}", end='')
+EOF
+
+VERBOSE=1 ./build.sh --config Release --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
+        --skip_tests --skip_submodule_sync --compile_no_warning_as_error ${ONNXRUNTIME_FLAGS} \
+        --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-psabi -I/usr/local/cuda/include" \
         --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
         --cmake_extra_defines CMAKE_INSTALL_PREFIX=${install_dir} \
         --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF \
