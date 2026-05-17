@@ -79,7 +79,7 @@ detect_cuda_max_jobs() {
     local safe_jobs=$(( (total_ram_gb - system_reserve) / cicc_mem_per_job ))
 
     # Clamp between reasonable bounds
-    if [ $safe_jobs -lt 4 ]; then safe_jobs=4; fi
+    if [ $safe_jobs -lt 2 ]; then safe_jobs=2; fi
     if [ $safe_jobs -gt 12 ]; then safe_jobs=12; fi  # Cap at 12 even for large systems
 
     echo $safe_jobs
@@ -159,14 +159,24 @@ done
 sed -i 's|abseil_cpp;https://github.com/abseil/abseil-cpp/archive/refs/tags/20250814.0.zip;a9eb1d648cbca4d4d788737e971a6a7a63726b07|abseil_cpp;https://github.com/abseil/abseil-cpp/archive/refs/tags/20250814.2.zip;e499d417732d4d76128bb835a719742d58a0555a|' \
   /opt/onnxruntime/cmake/deps.txt
 
-VERBOSE=1 ./build.sh --config Release --update \
+# VERBOSE=1 ./build.sh --config Release --update \
+#         --skip_tests --skip_submodule_sync --compile_no_warning_as_error ${ONNXRUNTIME_FLAGS} \
+#         --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-psabi -I/usr/local/cuda/include" \
+#         --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
+#         --cmake_extra_defines CMAKE_INSTALL_PREFIX=${install_dir} \
+#         --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF \
+#         --cuda_home /usr/local/cuda --cudnn_home ${CUDNN_HOME} \
+#         --use_tensorrt --tensorrt_home ${TENSORRT_HOME}
+
+
+VERBOSE=1 ./build.sh --config Release --update --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
         --skip_tests --skip_submodule_sync --compile_no_warning_as_error ${ONNXRUNTIME_FLAGS} \
         --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-psabi -I/usr/local/cuda/include" \
         --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
         --cmake_extra_defines CMAKE_INSTALL_PREFIX=${install_dir} \
         --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF \
         --cuda_home /usr/local/cuda --cudnn_home ${CUDNN_HOME} \
-        --use_tensorrt --tensorrt_home ${TENSORRT_HOME}
+        --use_tensorrt --tensorrt_home ${TENSORRT_HOME} || true
 
 # Abseil fix for the absl::lts_20250814::container_internal::IfRRef compile error
 python3 << 'EOF'
@@ -200,7 +210,7 @@ for i, line in enumerate(lines[107:113], 108):
     print(f"{i}: {line}", end='')
 EOF
 
-VERBOSE=1 ./build.sh --config Release --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
+VERBOSE=1 ./build.sh --config Release --update --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
         --skip_tests --skip_submodule_sync --compile_no_warning_as_error ${ONNXRUNTIME_FLAGS} \
         --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-psabi -I/usr/local/cuda/include" \
         --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
