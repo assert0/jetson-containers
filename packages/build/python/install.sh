@@ -63,23 +63,36 @@ which python
 python --version
 
 # Upgrade pip and base utilities
-uv pip install --upgrade --index-url "${PIP_INDEX_URL}" pip pkginfo
+# Try with the specified PIP_INDEX_URL first, fallback to default PyPI if it fails
+uv pip install --upgrade --index-url "${PIP_INDEX_URL}" pip pkginfo || \
+  uv pip install --upgrade --index-url https://pypi.org/simple pip pkginfo
 
 which pip || true
 pip --version || true
 
 # Install core dependencies
-uv pip install --no-binary :all: psutil
-uv pip install --upgrade \
+# Try with the specified index first, fallback to default PyPI if it fails
+uv pip install --no-binary :all: --index-url "${PIP_INDEX_URL}" psutil || \
+  uv pip install --no-binary :all: --index-url https://pypi.org/simple psutil
+uv pip install --upgrade --index-url "${PIP_INDEX_URL}" \
   "setuptools<=81" \
   packaging \
   Cython \
   wheel \
   uv \
-  nvidia-ml-py
+  nvidia-ml-py || \
+  uv pip install --upgrade --index-url https://pypi.org/simple \
+    "setuptools<=81" \
+    packaging \
+    Cython \
+    wheel \
+    uv \
+    nvidia-ml-py
 
 # Install publishing tool
-uv pip install --upgrade --index-url "${PIP_INDEX_URL}" twine
+# Try with the specified PIP_INDEX_URL first, fallback to default PyPI if it fails
+uv pip install --upgrade --index-url "${PIP_INDEX_URL}" twine || \
+  uv pip install --upgrade --index-url https://pypi.org/simple twine
 
 # Cleanup
 rm -rf /var/lib/apt/lists/*
