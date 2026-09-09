@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -ex
-uv pip install --force-reinstall "cmake${1:-<4}"
+# Try with the default index first, fallback to PyPI if it fails
+uv pip install --force-reinstall --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" "cmake${1:-<4}" || \
+  uv pip install --force-reinstall --default-index https://pypi.org/simple "cmake${1:-<4}"
 
 cmake --version
 which cmake

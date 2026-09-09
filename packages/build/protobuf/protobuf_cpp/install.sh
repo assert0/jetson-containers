@@ -18,8 +18,11 @@ apt-get install -y --no-install-recommends \
 rm -rf /var/lib/apt/lists/*
 apt-get clean
 
-uv pip install tzdata
-uv pip install 'setuptools<72'  # setup.py invalid command 'test'
+# Try with the default index first, fallback to PyPI if it fails
+uv pip install --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" tzdata || \
+  uv pip install --default-index https://pypi.org/simple tzdata
+uv pip install --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" 'setuptools<72' || \
+  uv pip install --default-index https://pypi.org/simple 'setuptools<72'  # setup.py invalid command 'test'
 
 cd /tmp
 

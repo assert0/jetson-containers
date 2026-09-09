@@ -17,10 +17,13 @@ PYBIND_INCLUDE_DIR="/usr/include/pybind11"
 rm $PYBIND_SHARE_CMAKE/*.cmake
 rm -rf $PYBIND_INCLUDE_DIR
 
+# Try with the default index first, fallback to PyPI if it fails
 if [ -n "$PYBIND11_VERSION" ]; then
-    uv pip install --upgrade "pybind11[global]==$PYBIND11_VERSION"
+    uv pip install --upgrade --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" "pybind11[global]==$PYBIND11_VERSION" || \
+      uv pip install --upgrade --default-index https://pypi.org/simple "pybind11[global]==$PYBIND11_VERSION"
 else
-    uv pip install --upgrade "pybind11[global]"
+    uv pip install --upgrade --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" "pybind11[global]" || \
+      uv pip install --upgrade --default-index https://pypi.org/simple "pybind11[global]"
 fi
 
 PYTHON_ROOT="$(uv pip show pybind11 | grep Location: | cut -d' ' -f2)"
