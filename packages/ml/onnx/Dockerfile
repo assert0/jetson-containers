@@ -12,8 +12,8 @@ FROM ${BASE_IMAGE}
 
 ARG ONNX_VERSION
 
-RUN uv pip install onnx || \
-    uv pip install git+https://github.com/onnx/onnx@${ONNX_VERSION} && \
+RUN uv pip install --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" onnx || \
+    uv pip install --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" git+https://github.com/onnx/onnx@${ONNX_VERSION} && \
     uv pip show onnx && \
     python3 -c 'import onnx; print(onnx.__version__)'
 
