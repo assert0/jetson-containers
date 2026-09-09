@@ -1,6 +1,8 @@
 set -ex
 
-uv pip install --force-reinstall ${NUMPY_PACKAGE}
+# Try with the default index first, fallback to PyPI if it fails
+uv pip install --force-reinstall --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" ${NUMPY_PACKAGE} || \
+  uv pip install --force-reinstall --default-index https://pypi.org/simple ${NUMPY_PACKAGE}
 uv pip show numpy && python3 -c 'import numpy; print(numpy.__version__)'
 
 set +e
@@ -12,6 +14,8 @@ uv pip show numba
 if [ $? = 0 ]; then
   python3 -c 'import numba'
   if [ $? != 0 ]; then # numba failed to import (presumably due to numpy being changed)
-    uv pip install --force-reinstall numba
+    # Try with the default index first, fallback to PyPI if it fails
+    uv pip install --force-reinstall --default-index "${PIP_INDEX_URL:-https://pypi.org/simple}" numba || \
+      uv pip install --force-reinstall --default-index https://pypi.org/simple numba
   fi
 fi
