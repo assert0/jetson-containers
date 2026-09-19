@@ -2,7 +2,7 @@ diff --git a/setup.py b/setup.py
 index 7c47082..bf07f64 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -130,7 +130,9 @@ def main():
+@@ -128,11 +128,12 @@
              r"python/cv2/.*config.*.py"
          ]
          +
@@ -11,9 +11,15 @@ index 7c47082..bf07f64 100755
 +        #[ r"python/cv2/py.typed" ] if sys.version_info >= (3, 6) else []
 +        []
          ,
-         "cv2.data": [  # OPENCV_OTHER_INSTALL_PATH
-             ("etc" if os.name == "nt" else "share/opencv4") + r"/haarcascades/.*\.xml"
-@@ -149,8 +151,9 @@ def main():
+-        "cv2.data": [  # OPENCV_OTHER_INSTALL_PATH
+-            ("etc" if os.name == "nt" else "share/opencv4") + r"/haarcascades/.*\.xml"
+-        ],
++        # https://github.com/opencv/opencv-python/issues/871
++        # "cv2.data" entry removed to avoid haarcascades file not found error
+         "cv2.gapi": [
+             "python/cv2" + r"/gapi/.*\.py"
+         ],
+@@ -147,8 +148,9 @@
          ],
      }
  
@@ -25,7 +31,7 @@ index 7c47082..bf07f64 100755
  
      # Files in sourcetree outside package dir that should be copied to package.
      # Raw paths relative to sourcetree root.
-@@ -497,7 +500,7 @@ def get_and_set_info(contrib, headless, rolling, ci_build):
+@@ -500,7 +502,7 @@
  
      # generate a fresh version.py always when Git repository exists
      # (in sdists the version.py file already exists)
