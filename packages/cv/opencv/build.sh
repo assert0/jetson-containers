@@ -29,12 +29,53 @@ git diff
 ln -sfnv /usr/include/$(uname -i)-linux-gnu/cudnn_version_v*.h /usr/include/$(uname -i)-linux-gnu/cudnn_version.h
 
 # patches for FP16/half casts
+# These patches are only needed for OpenCV versions < 4.10.0
+# In 4.10.0+, the upstream code already has the fixes
 function patch_opencv()
 {
-    sed -i 's|weight != 1.0|(float)weight != 1.0f|' opencv/modules/dnn/src/cuda4dnn/primitives/normalize_bbox.hpp
-    sed -i 's|nms_iou_threshold > 0|(float)nms_iou_threshold > 0.0f|' opencv/modules/dnn/src/cuda4dnn/primitives/region.hpp
-    grep 'weight' opencv/modules/dnn/src/cuda4dnn/primitives/normalize_bbox.hpp
-    grep 'nms_iou_threshold' opencv/modules/dnn/src/cuda4dnn/primitives/region.hpp
+    # Check if the patches are needed by looking for the old patterns
+    # Try multiple possible paths for the files
+    local normalize_bbox_file=""
+    local region_file=""
+    
+    # Try to find the files in common locations
+    # These files are in the main opencv repo, not opencv_contrib
+    for path in \
+        "opencv/modules/dnn/src/cuda4dnn/primitives/normalize_bbox.hpp" \
+        "modules/dnn/src/cuda4dnn/primitives/normalize_bbox.hpp" \
+        "/opt/opencv/modules/dnn/src/cuda4dnn/primitives/normalize_bbox.hpp" \
+        "/opt/opencv-python/opencv/modules/dnn/src/cuda4dnn/primitives/normalize_bbox.hpp"; do
+        if [ -f "$path" ]; then
+            normalize_bbox_file="$path"
+            break
+        fi
+    done
+    
+    for path in \
+        "opencv/modules/dnn/src/cuda4dnn/primitives/region.hpp" \
+        "modules/dnn/src/cuda4dnn/primitives/region.hpp" \
+        "/opt/opencv/modules/dnn/src/cuda4dnn/primitives/region.hpp" \
+        "/opt/opencv-python/opencv/modules/dnn/src/cuda4dnn/primitives/region.hpp"; do
+        if [ -f "$path" ]; then
+            region_file="$path"
+            break
+        fi
+    done
+    
+    # Apply patches if files exist and contain the old patterns
+    if [ -n "$normalize_bbox_file" ] && grep -q 'weight != 1.0' "$normalize_bbox_file"; then
+        sed -i 's|weight != 1.0|(float)weight != 1.0f|' "$normalize_bbox_file"
+        echo "Applied weight != 1.0 patch to $normalize_bbox_file"
+    else
+        echo "normalize_bbox.hpp patch not needed (file not found or already fixed upstream)"
+    fi
+    
+    if [ -n "$region_file" ] && grep -q 'nms_iou_threshold > 0' "$region_file"; then
+        sed -i 's|nms_iou_threshold > 0|(float)nms_iou_threshold > 0.0f|' "$region_file"
+        echo "Applied nms_iou_threshold > 0 patch to $region_file"
+    else
+        echo "region.hpp patch not needed (file not found or already fixed upstream)"
+    fi
 }
 
 patch_opencv
