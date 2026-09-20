@@ -6,30 +6,24 @@ cd /opt
 # install dependencies
 bash $TMP/install_deps.sh
 
-# Determine the major version for fallback branch
-OPENCV_MAJOR=$(echo "${OPENCV_VERSION}" | cut -d'.' -f1)
-FALLBACK_BRANCH="origin/${OPENCV_MAJOR}.x"
-
-git clone --branch "${OPENCV_VERSION}" --recursive https://github.com/opencv/opencv \
-  || git clone --recursive https://github.com/opencv/opencv
-cd /opt/opencv && git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules ${FALLBACK_BRANCH}
+git clone --branch "${OPENCV_VERSION}" --recursive https://github.com/opencv/opencv
+cd /opt/opencv && git checkout --recurse-submodules ${OPENCV_VERSION}
 
 cd /opt
-git clone --branch "${OPENCV_VERSION}" --recursive https://github.com/opencv/opencv_contrib \
-  || git clone --recursive https://github.com/opencv/opencv_contrib
-cd /opt/opencv_contrib && git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules ${FALLBACK_BRANCH}
+git clone --branch "${OPENCV_VERSION}" --recursive https://github.com/opencv/opencv_contrib
+cd /opt/opencv_contrib && git checkout --recurse-submodules ${OPENCV_VERSION}
 
 cd /opt
 git clone --branch "${OPENCV_PYTHON}" --recursive https://github.com/opencv/opencv-python \
   || git clone --recursive https://github.com/opencv/opencv-python && export ENABLE_ROLLING=1
 
-cd /opt/opencv-python/opencv || git checkout --recurse-submodules ${FALLBACK_BRANCH}
-git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules ${FALLBACK_BRANCH}
+cd /opt/opencv-python/opencv
+git checkout --recurse-submodules ${OPENCV_VERSION}
 cat modules/core/include/opencv2/core/version.hpp
 cd ../opencv_contrib
-git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules ${FALLBACK_BRANCH}
+git checkout --recurse-submodules ${OPENCV_VERSION}
 cd ../opencv_extra
-git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules ${FALLBACK_BRANCH}
+git checkout --recurse-submodules ${OPENCV_VERSION}
 
 cd /opt/opencv-python
 
