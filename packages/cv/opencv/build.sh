@@ -9,22 +9,26 @@ bash $TMP/install_deps.sh
 
 git clone --branch "${OPENCV_VERSION}" --recursive https://github.com/opencv/opencv \
   || git clone --recursive https://github.com/opencv/opencv
+cd /opt/opencv && git checkout --recurse-submodules ${OPENCV_VERSION} 2>/dev/null || git checkout --recurse-submodules origin/4.x
 
+cd /opt
 git clone --branch "${OPENCV_VERSION}" --recursive https://github.com/opencv/opencv_contrib \
   || git clone --recursive https://github.com/opencv/opencv_contrib
+cd /opt/opencv_contrib && git checkout --recurse-submodules ${OPENCV_VERSION} 2>/dev/null || git checkout --recurse-submodules origin/4.x
 
+cd /opt
 git clone --branch "${OPENCV_PYTHON}" --recursive https://github.com/opencv/opencv-python \
   || git clone --recursive https://github.com/opencv/opencv-python && export ENABLE_ROLLING=1
 
 cd /opt/opencv-python/opencv || git checkout --recurse-submodules origin/4.x
-git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules origin/4.x
+git checkout --recurse-submodules ${OPENCV_VERSION} 2>/dev/null || git checkout --recurse-submodules origin/4.x
 cat modules/core/include/opencv2/core/version.hpp
 cd ../opencv_contrib
-git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules origin/4.x
+git checkout --recurse-submodules ${OPENCV_VERSION} 2>/dev/null || git checkout --recurse-submodules origin/4.x
 cd ../opencv_extra
-git checkout --recurse-submodules ${OPENCV_VERSION} || git checkout --recurse-submodules origin/4.x
+git checkout --recurse-submodules ${OPENCV_VERSION} 2>/dev/null || git checkout --recurse-submodules origin/4.x
 
-cd ../
+cd /opt/opencv-python
 
 # apply patches to setup.py
 git apply $TMP/patches.diff || echo "failed to apply git patches"
