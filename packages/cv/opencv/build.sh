@@ -14,8 +14,7 @@ git clone --recursive https://github.com/opencv/opencv_contrib
 cd /opt/opencv_contrib && git checkout --recurse-submodules ${OPENCV_VERSION}
 
 cd /opt
-git clone --branch "${OPENCV_PYTHON}" --recursive https://github.com/opencv/opencv-python \
-  || git clone --recursive https://github.com/opencv/opencv-python && export ENABLE_ROLLING=1
+git clone --branch "${OPENCV_PYTHON}" --recursive https://github.com/opencv/opencv-python
 
 # Check the OpenCV version from the opencv-python submodule
 cd /opt/opencv-python/opencv

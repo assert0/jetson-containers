@@ -1,12 +1,12 @@
 from jetson_containers import CUDA_VERSION, CUDA_ARCHITECTURES
 from packaging.version import Version
 
-def opencv(version, requires=None, default=False, url=None):
+def opencv(version, python_version, requires=None, default=False, url=None):
     cv = package.copy()
 
     cv['build_args'] = {
         'OPENCV_VERSION': version,
-        'OPENCV_PYTHON': f"{version.split('.')[0]}.x",
+        'OPENCV_PYTHON': python_version,
         'CUDA_ARCH_BIN': ','.join([f'{x/10:.1f}' for x in CUDA_ARCHITECTURES]),
     }
 
@@ -41,18 +41,19 @@ def opencv(version, requires=None, default=False, url=None):
 
 package = [
     # JetPack 5/6
-    opencv('4.5.0', '==35.*', default=False),
-    opencv('4.8.1', '>=35', default=(CUDA_VERSION <= Version('12.2'))),
-    opencv('4.10.0', '>=35', default=(CUDA_VERSION >= Version('12.4') and CUDA_VERSION < Version('12.6'))),
-    opencv('4.11.0', '>=35', default=False),
-    opencv('4.12.0', '>=36', default=False), # Blackwell Support
-    opencv('4.13.0', '>=36', default=(CUDA_VERSION >= Version('12.6') and CUDA_VERSION < Version('13.1'))), # Thor Support
-    opencv('4.14.0', '>=36', default=(CUDA_VERSION >= Version('13.2'))), # Thor Support
+    opencv('4.5.5', '64', requires='==35.*', default=False),
+    opencv('4.8.1', '78', requires='>=35', default=(CUDA_VERSION <= Version('12.2'))),
+    opencv('4.10.0', '84', requires='>=35', default=(CUDA_VERSION >= Version('12.4') and CUDA_VERSION < Version('12.6'))),
+    opencv('4.11.0', '86', requires='>=35', default=False),
+    opencv('4.12.0', '88', requires='>=36', default=False), # Blackwell Support
+    opencv('4.13.0', '92', requires='>=36', default=(CUDA_VERSION >= Version('12.6') and CUDA_VERSION < Version('13.2'))), # Thor Support
+    opencv('4.14.0', '94', requires='>=36', default=False), # Thor Support
+    opencv('5.0.0', '93', requires='>=39', default=(CUDA_VERSION >= Version('13.2'))), # Thor Support
 
     # JetPack 4
-    opencv('4.5.0', '==32.*', default=True, url='https://nvidia.box.com/shared/static/5v89u6g5rb62fpz4lh0rz531ajo2t5ef.gz'),
+    opencv('4.5.0', '64', requires='==32.*', default=True, url='https://nvidia.box.com/shared/static/5v89u6g5rb62fpz4lh0rz531ajo2t5ef.gz'),
 
     # Debians (c++)
-    opencv('4.5.0', '==35.*', default=False, url='https://nvidia.box.com/shared/static/2hssa5g3v28ozvo3tc3qwxmn78yerca9.gz'),
-    opencv('4.8.1', '==36.*', default=False, url='https://nvidia.box.com/shared/static/ngp26xb9hb7dqbu6pbs7cs9flztmqwg0.gz'),
+    opencv('4.5.5', '64', requires='==35.*', default=False, url='https://nvidia.box.com/shared/static/2hssa5g3v28ozvo3tc3qwxmn78yerca9.gz'),
+    opencv('4.8.1', '78', requires='==36.*', default=False, url='https://nvidia.box.com/shared/static/ngp26xb9hb7dqbu6pbs7cs9flztmqwg0.gz'),
 ]

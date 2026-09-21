@@ -73,7 +73,8 @@ pkg-config --modversion aom
 pkg-config --modversion SvtAv1Enc
 
 # nv-codec-headers
-git clone https://github.com/FFmpeg/nv-codec-headers.git
+# Use a specific tag that's compatible with this version of FFmpeg
+git clone --branch n13.0.19.0 --depth 1 https://github.com/FFmpeg/nv-codec-headers.git
 cd nv-codec-headers && make PREFIX="$DIST" install
 
 export PATH=/usr/local/cuda/bin:${PATH}

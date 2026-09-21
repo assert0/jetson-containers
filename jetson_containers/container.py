@@ -199,6 +199,50 @@ def _prepare_buildkit_dockerfile(
 
     return output_path
 
+
+def _get_repository_urls():
+    """
+    Compute repository URLs from environment variables and system configuration.
+    Returns a dict of build arguments for package repositories.
+    """
+    from .l4t_version import JETPACK_VERSION, CUDA_VERSION, LSB_RELEASE, IS_TEGRA, IS_SBSA
+    
+    index_host = os.environ.get('INDEX_HOST', 'jetson-ai-lab.io')
+    
+    # Determine the short version (e.g., cu124, cu132)
+    short_version = os.environ.get('CUDA_SHORT_VERSION')
+    if not short_version:
+        short_version = f"cu{CUDA_VERSION.major}{CUDA_VERSION.minor}" if hasattr(CUDA_VERSION, 'major') else "cu132"
+    
+    # Determine pip_path and apt_path
+    pip_path = os.environ.get('PIP_PATH') or os.environ.get('CUDA_PACKAGES_PATH')
+    if not pip_path:
+        if IS_TEGRA:
+            pip_path = f"jp{JETPACK_VERSION.major}/{short_version}" if hasattr(JETPACK_VERSION, 'major') else f"jp7/{short_version}"
+        else:
+            pip_path = f"jp{CUDA_VERSION.major}.{CUDA_VERSION.minor}/{short_version}" if hasattr(CUDA_VERSION, 'major') else f"jp13.2/{short_version}"
+    
+    # apt_path includes LSB_RELEASE for Ubuntu 24.04+
+    apt_path = pip_path if Version(LSB_RELEASE).major < 24 else f"{pip_path}/{LSB_RELEASE}"
+    
+    # Get local tar index URL
+    local_tar_index = os.environ.get('LOCAL_TAR_INDEX_URL', '')
+    
+    # Compute full URLs
+    tar_index_url = f"{local_tar_index}/{apt_path}" if local_tar_index else f"https://apt.{index_host}/{apt_path}"
+    fallback_tar_index_url = f"https://apt.{index_host}/{apt_path}"
+    
+    # Compute other URLs
+    multiarch_url = os.environ.get('MULTIARCH_URL') or f"{local_tar_index}/multiarch" if local_tar_index else f"https://apt.{index_host}/multiarch"
+    downloads_url = os.environ.get('DOWNLOADS_URL') or f"{local_tar_index}/assets" if local_tar_index else f"https://apt.{index_host}/assets"
+    
+    return {
+        'TAR_INDEX_URL': tar_index_url,
+        'FALLBACK_TAR_INDEX_URL': fallback_tar_index_url,
+        'MULTIARCH_URL': multiarch_url,
+        'DOWNLOADS_URL': downloads_url,
+    }
+
 def build_container(
         name: str='', packages: list=[], base: str=get_l4t_base(),
         buildkit: bool=True, buildkit_device: str='', buildkit_progress: str='tty',
@@ -403,6 +447,41 @@ def build_container(
                     val = os.environ.get(arg_name, '')
                     if val:
                         cmd += f"  --build-arg {arg_name}={val}" + _NEWLINE_
+
+                # Compute and pass package repository URLs
+                # First, try to compute full URLs from system configuration
+                repo_urls = {}
+                try:
+                    repo_urls = _get_repository_urls()
+                except Exception:
+                    pass  # Fall back to environment variables below
+                
+                # Pass computed repository URLs as build arguments
+                for arg_name, url in repo_urls.items():
+                    if url:
+                        cmd += f"  --build-arg {arg_name}=\"{url}\"" + _NEWLINE_
+
+                # Also pass any explicitly set environment variables (overrides computed values)
+                for arg_name, env_name in [
+                    ('TAR_INDEX_URL', 'LOCAL_TAR_INDEX_URL'),
+                    ('FALLBACK_TAR_INDEX_URL', 'FALLBACK_TAR_INDEX_URL'),
+                    ('TAR_UPLOAD_URL', 'TAR_UPLOAD_URL'),
+                    ('PIP_INDEX_REPO', 'LOCAL_PIP_INDEX_REPO'),
+                    ('FALLBACK_PIP_INDEX_URL', 'FALLBACK_PIP_INDEX_URL'),
+                    ('UV_EXTRA_INDEX_URL', 'UV_EXTRA_INDEX_URL'),
+                    ('PIP_UPLOAD_REPO', 'PIP_UPLOAD_REPO'),
+                    ('PIP_UPLOAD_USER', 'PIP_UPLOAD_USER'),
+                    ('PIP_UPLOAD_PASS', 'PIP_UPLOAD_PASS'),
+                    ('MULTIARCH_URL', 'MULTIARCH_URL'),
+                    ('DOWNLOADS_URL', 'DOWNLOADS_URL'),
+                    ('SCP_UPLOAD_URL', 'SCP_UPLOAD_URL'),
+                    ('SCP_UPLOAD_USER', 'SCP_UPLOAD_USER'),
+                    ('SCP_UPLOAD_PASS', 'SCP_UPLOAD_PASS'),
+                ]:
+                    val = os.environ.get(env_name, '')
+                    if val and arg_name not in repo_urls:  # Only add if not already computed
+                        cmd += f"  --build-arg {arg_name}=\"{val}\"" + _NEWLINE_
+
                 if use_buildx and any(cache.startswith('type=inline') for cache in cache_to):
                     cmd += f"  --build-arg BUILDKIT_INLINE_CACHE=1" + _NEWLINE_
 

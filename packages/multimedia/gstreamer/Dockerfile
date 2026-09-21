@@ -1,7 +1,7 @@
 #---
 # name: gstreamer
 # group: multimedia
-# depends: opencv
+# depends: [opencv, ffmpeg]
 # buildkit_device: nvidia.com/gpu=all
 # test: [test.sh, test.py]
 #---

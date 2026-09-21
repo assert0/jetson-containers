@@ -93,39 +93,79 @@ git submodule update --init --recursive
 
 install_dir="/opt/onnxruntime/install"
 
-# Patch CCCL bug in device_transform.cuh (CUDA 13.2)
+# Patch CCCL bug in device_transform.cuh and tuning_transform.cuh (CUDA 13.2)
 # Template specialization of cuda::proclaims_copyable_arguments uses qualified name
 # at global scope which GCC rejects. Wrap in namespace cuda {} instead.
 # uname -m returns aarch64 even on SBSA, but CUDA headers live under targets/sbsa-linux/
-for CCCL_HEADER in \
-    /usr/local/cuda/targets/sbsa-linux/include/cccl/cub/device/device_transform.cuh \
-    /usr/local/cuda/targets/aarch64-linux/include/cccl/cub/device/device_transform.cuh \
-    /usr/local/cuda/include/cccl/cub/device/device_transform.cuh; do
-    if [ -f "$CCCL_HEADER" ] && grep -q 'struct ::cuda::proclaims_copyable_arguments' "$CCCL_HEADER"; then
-        echo "Patching CCCL device_transform.cuh: $CCCL_HEADER"
-        python3 -c "
-p = '$CCCL_HEADER'
-with open(p) as f:
-    src = f.read()
-old = '''template <class T>
+echo "Applying CCCL header patches..."
+
+patch_cccl_headers() {
+    python3 - <<'PYTHON_EOF'
+import os
+
+def patch_file(filepath, old_pattern, new_pattern):
+    if not os.path.exists(filepath):
+        return False
+    with open(filepath, 'r') as f:
+        src = f.read()
+    if old_pattern in src:
+        with open(filepath, 'w') as f:
+            f.write(src.replace(old_pattern, new_pattern))
+        return True
+    return False
+
+# Pattern 1: device_transform.cuh
+old1 = """template <typename T>
 struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
-{};'''
-new = '''namespace cuda {
-template <class T>
+{};"""
+new1 = """namespace cuda {
+template <typename T>
 struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
-} // namespace cuda'''
-if old in src:
-    with open(p, 'w') as f:
-        f.write(src.replace(old, new))
-    print('Patched successfully')
-else:
-    print('Exact pattern not found, skipping')
-"
-    fi
-done
+} // namespace cuda"""
 
-./build.sh --config Release --update --parallel --build --build_wheel --build_shared_lib \
+# Pattern 2: tuning_transform.cuh
+old2 = """template <>
+struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
+    : ::cuda::std::true_type
+{};"""
+new2 = """namespace cuda {
+template <>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
+    : ::cuda::std::true_type
+{};
+} // namespace cuda"""
+
+device_transform_files = [
+    '/usr/local/cuda/targets/sbsa-linux/include/cccl/cub/device/device_transform.cuh',
+    '/usr/local/cuda/targets/aarch64-linux/include/cccl/cub/device/device_transform.cuh',
+    '/usr/local/cuda/include/cccl/cub/device/device_transform.cuh',
+]
+
+tuning_transform_files = [
+    '/usr/local/cuda/targets/sbsa-linux/include/cccl/cub/device/dispatch/tuning/tuning_transform.cuh',
+    '/usr/local/cuda/targets/aarch64-linux/include/cccl/cub/device/dispatch/tuning/tuning_transform.cuh',
+    '/usr/local/cuda/include/cccl/cub/device/dispatch/tuning/tuning_transform.cuh',
+]
+
+patched_any = False
+for filepath in device_transform_files + tuning_transform_files:
+    if os.path.exists(filepath):
+        if 'device_transform' in filepath and patch_file(filepath, old1, new1):
+            print(f'Patched: {filepath}')
+            patched_any = True
+        elif 'tuning_transform' in filepath and patch_file(filepath, old2, new2):
+            print(f'Patched: {filepath}')
+            patched_any = True
+
+if not patched_any:
+    print('Warning: No CCCL files were patched - checking if already patched or files missing')
+PYTHON_EOF
+}
+
+patch_cccl_headers
+
+./build.sh --config Release --update --parallel ${MAX_JOBS} --build --build_wheel --build_shared_lib \
         --skip_tests --skip_submodule_sync ${ONNXRUNTIME_FLAGS} \
         --cmake_extra_defines CMAKE_CXX_FLAGS="-Wno-unused-variable -I/usr/local/cuda/include" \
         --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
