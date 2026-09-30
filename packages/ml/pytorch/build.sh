@@ -16,7 +16,7 @@ grep 'PR_SVE_GET_VL' ${CPUINFO_PATCH} || echo "patched ${CPUINFO_PATCH}"
 tail -20 ${CPUINFO_PATCH}
 
 uv pip install -r requirements.txt
-uv pip install scikit-build ninja
+uv pip install scikit-build ninja build
 
 
 #TORCH_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" \
@@ -81,7 +81,7 @@ trap cleanup EXIT
 
 # --- Build progress tracking ---
 echo "=== Starting PyTorch build at $(date) ==="
-echo "Build command: python3 setup.py bdist_wheel --dist-dir /opt"
+echo "Build command: python -m build --wheel --no-isolation --outdir /opt"
 echo "Environment variables:"
 env | grep -E "(USE_|BLAS|CUDA|TORCH)" | sort
 
@@ -108,7 +108,7 @@ export USE_MEM_EFF_ATTENTION=1
 export USE_TENSORRT=0
 export USE_BLAS="$USE_BLAS"
 export BLAS="$BLAS"
-python3 setup.py bdist_wheel --dist-dir /opt
+python -m build --wheel --no-isolation --outdir /opt
 
 cd /
 rm -rf /opt/pytorch
