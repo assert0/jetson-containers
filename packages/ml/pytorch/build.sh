@@ -101,13 +101,14 @@ export USE_C10D_XCCL=1
 export USE_DISTRIBUTED=1
 export USE_NCCL=1
 export USE_XCCL=1
-export USE_NATIVE_ARCH=0
+export USE_NATIVE_ARCH=0s
 export USE_TENSORPIPE=1
 export USE_FLASH_ATTENTION=1
 export USE_MEM_EFF_ATTENTION=1
 export USE_TENSORRT=0
 export USE_BLAS="$USE_BLAS"
 export BLAS="$BLAS"
+export CMAKE_BUILD_PARALLEL_LEVEL=3
 python -m build --wheel --no-isolation --outdir /opt
 
 cd /

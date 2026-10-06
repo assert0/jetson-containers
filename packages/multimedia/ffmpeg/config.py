@@ -1,3 +1,6 @@
+from jetson_containers import LSB_RELEASE
+from packaging.version import Version
+
 
 def ffmpeg(source, version=None, requires=None, default=False, alias=[]):
   """
@@ -30,10 +33,12 @@ def ffmpeg(source, version=None, requires=None, default=False, alias=[]):
 
   return pkg
 
+default_latest = (Version(LSB_RELEASE) >= Version('24.04'))
 
 package = [
   # ffmpeg('apt', default=True),
   ffmpeg('git', version='7.1', alias=['ffmpeg:7.1'], default=False),
-  ffmpeg('git', version='8.1', alias=['ffmpeg:8.1'], default=True),
+  ffmpeg('git', version='8.1', alias=['ffmpeg:8.1'], default=not default_latest),
+  ffmpeg('git', version='9.0', alias=['ffmpeg:9.0'], default=default_latest),
   ffmpeg('jetpack', requires='==36.*'),
 ]
