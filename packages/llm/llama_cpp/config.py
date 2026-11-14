@@ -15,14 +15,14 @@ def llama_cpp(version, default=False, flags=GGUF_FLAGS):
     Define container that builds both llama.cpp and llama-cpp-python.
     Different versions may have some different flag options activated.
     """
-    cpp = bool(version[0] == 'b')
+    cpp = bool(version[0] == 'b' or version[0] == 'v')
     pkg = package.copy()
 
     pkg['name'] = f'llama_cpp:{version}'
 
     pkg['build_args'] = {
         'LLAMA_CPP_VERSION': version[1:] if cpp else None,
-        'LLAMA_CPP_VERSION_PY': '0.3.22' if cpp else version,
+        'LLAMA_CPP_VERSION_PY': '0.3.36' if cpp else version,
         'LLAMA_CPP_BRANCH': version if cpp else None,
         'LLAMA_CPP_BRANCH_PY': 'main' if cpp else f'v{version}',
         'LLAMA_CPP_FLAGS': flags,
@@ -53,5 +53,6 @@ package = [
     llama_cpp('0.2.70', flags=GGML_FLAGS),
     # llama_cpp_python appears abandoned (4/25)
     # so we changed over to llama.cpp branches
-    llama_cpp('b9016', default=True)
+    llama_cpp('b9016', default=False),
+    llama_cpp('v0.9.0', default=True)
 ]

@@ -21,20 +21,20 @@ fi
 
 # Check what cuDSS library expects
 echo -e "\n3. cuDSS Library Dependencies:"
-if [[ -f "/lib/aarch64-linux-gnu/libcudss.so.0" ]]; then
+if [[ -f "/lib/aarch64-linux-gnu/libcudss.so" ]]; then
     echo "cuDSS library found:"
-    ls -la /lib/aarch64-linux-gnu/libcudss.so.0
+    ls -la /lib/aarch64-linux-gnu/libcudss.so
 
     echo -e "\ncuDSS library dependencies:"
-    ldd /lib/aarch64-linux-gnu/libcudss.so.0 | grep cublas || echo "No cublas dependency found"
+    ldd /lib/aarch64-linux-gnu/libcudss.so | grep cublas || echo "No cublas dependency found"
 
     echo -e "\ncuDSS library symbols (cublas functions):"
-    nm -D /lib/aarch64-linux-gnu/libcudss.so.0 | grep cublas | head -5 || echo "No cublas symbols found"
+    nm -D /lib/aarch64-linux-gnu/libcudss.so | grep cublas | head -5 || echo "No cublas symbols found"
 else
-    echo "cuDSS library not found at /lib/aarch64-linux-gnu/libcudss.so.0"
-    CUDSS_LIB=$(find /usr /lib -name "libcudss.so.0" 2>/dev/null | head -n 1)
+    echo "cuDSS library not found at /lib/aarch64-linux-gnu/libcudss.so"
+    CUDSS_LIB=$(find /usr /lib -name "libcudss.so" 2>/dev/null | head -n 1)
     if [[ -z "$CUDSS_LIB" ]]; then
-        echo "❌ libcudss.so.0 is missing!"
+        echo "❌ libcudss.so is missing!"
         exit 1
     else
         echo "cuDSS library found at: $CUDSS_LIB"
