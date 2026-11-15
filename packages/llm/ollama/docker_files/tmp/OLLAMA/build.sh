@@ -31,7 +31,9 @@ install -Dm755 \
   "${OLLAMA_HOME}/build/llama-server-local/bin/libggml-cuda.so" \
   "${OLLAMA_HOME}/build/lib/ollama/libggml-cuda.so"
 
-go build -o "${OLLAMA_HOME}/ollama" .
+go build \
+  -ldflags "-X github.com/ollama/ollama/version.Version=${OLLAMA_VERSION}" \
+  -o "${OLLAMA_HOME}/ollama" .
 
 ln -sf "${OLLAMA_HOME}/ollama" /usr/local/bin/ollama
 if [ $? -ne 0 ]; then
