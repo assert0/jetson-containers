@@ -13,4 +13,8 @@ args = parser.parse_args()
 print(args)
 
 ollama.pull(args.model)
-ollama.chat(model=args.model, messages=[{"role":"user", "content":args.prompt}])
+ollama.chat(
+    model=args.model,
+    messages=[{"role": "user", "content": args.prompt}],
+    options={"num_predict": 32},
+)

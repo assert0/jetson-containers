@@ -20,11 +20,16 @@ cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CUDA_COMPILER="${CMAKE_CUDA_COMPILER}" \
   -DCMAKE_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
+  -DGGML_CUDA=ON \
   -DGGML_CUDA_ARCHITECTURES="${CUDA_ARCHITECTURES}" \
   -DGGML_CPU_ALL_VARIANTS=OFF \
   -DGGML_CPU_ARM_ARCH=armv8.2-a
 
 cmake --build build -j"$(nproc)"
+
+install -Dm755 \
+  "${OLLAMA_HOME}/build/llama-server-local/bin/libggml-cuda.so" \
+  "${OLLAMA_HOME}/build/lib/ollama/libggml-cuda.so"
 
 go build -o "${OLLAMA_HOME}/ollama" .
 
@@ -41,7 +46,10 @@ if [ $? -ne 0 ]; then
   echo "Warning: Failed to create symlink /bin/ollama" >&2
 fi
 
-echo "/opt/ollama/build/lib/ollama" > /etc/ld.so.conf.d/ollama.conf
+printf '%s\n' \
+  "${OLLAMA_HOME}/build/lib/ollama" \
+  "${OLLAMA_HOME}/build/llama-server-local/bin" \
+  > /etc/ld.so.conf.d/ollama.conf
 ldconfig
 
 uv pip install --no-cache-dir ollama
